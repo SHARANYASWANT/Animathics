@@ -1,0 +1,11 @@
+google-generativeai
+manim
+fastapi
+uvicorn
+python-dotenv
+sqlalchemy
+alembic
+python-jose[cryptography]
+passlib[bcrypt]
+psycopg2-binary
+elevenlabs
