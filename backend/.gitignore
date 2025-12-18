@@ -1,1 +1,6 @@
 .env
+/audio
+/media
+/subtitles
+/temp_scripts
+/videos

@@ -27,7 +27,7 @@ if not GEMINI_API_KEY:
     raise ValueError("GEMINI_API_KEY not found in .env file.")
 
 genai.configure(api_key=GEMINI_API_KEY)
-gemini_model = genai.GenerativeModel("models/gemini-1.5-flash")
+gemini_model = genai.GenerativeModel("models/gemini-2.5-flash")
 print("Gemini initialized successfully.")
 
 try:
@@ -539,10 +539,10 @@ def generate_audio(request: AudioRequest):
     if not elevenlabs_client:
         raise HTTPException(status_code=503, detail="Audio generation is disabled.")
     try:
-        audio = elevenlabs_client.generate(
-            text=request.text,
-            voice="Rachel",
-            model="eleven_multilingual_v2"
+        audio = elevenlabs_client.text_to_speech.convert(
+            voice_id="21m00Tcm4TlvDq8ikWAM", 
+            model_id="eleven_multilingual_v2",
+            text=request.text
         )
         audio_filename = f"audio_{uuid.uuid4().hex}.mp3"
         audio_path = os.path.join("audio", audio_filename)
