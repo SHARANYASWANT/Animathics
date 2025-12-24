@@ -9,3 +9,5 @@ python-jose[cryptography]
 passlib[bcrypt]
 psycopg2-binary
 elevenlabs
+langgraph 
+langchain-core
