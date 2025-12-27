@@ -18,6 +18,8 @@ def build_gemini_prompt(topic: str) -> str:
 - ❌ Mixing VMobject and Mobject in VGroup
 - ❌ Elements extending beyond screen boundaries
 - ❌ Overlapping text or objects
+- ❌ Do NOT use MathTex or LaTeX. Use Text instead.
+
 
 ## ✅ MANDATORY REQUIREMENTS
 

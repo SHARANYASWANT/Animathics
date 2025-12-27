@@ -1,5 +1,11 @@
 from dataclasses import dataclass
 from typing import Optional, Any
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="🧠 [%(name)s] %(message)s"
+)
 
 @dataclass
 class AgentResult:
@@ -11,5 +17,8 @@ class AgentResult:
 class BaseAgent:
     name = "BaseAgent"
 
-    def run(self, *args, **kwargs) -> AgentResult:
+    def log(self, msg: str):
+        logging.getLogger(self.name).info(msg)
+
+    def run(self, *args, **kwargs):
         raise NotImplementedError

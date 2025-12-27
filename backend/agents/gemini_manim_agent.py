@@ -5,8 +5,8 @@ from utils.manim_cleaner import clean_manim_code
 class GeminiManimAgent(BaseAgent):
     name = "GeminiManimAgent"
 
-    def __init__(self, gemini_model):
-        self.model = gemini_model
+    def __init__(self, model):
+        self.model = model
 
     def run(self, topic: str) -> AgentResult:
         try:
