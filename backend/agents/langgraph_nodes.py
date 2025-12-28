@@ -2,7 +2,6 @@ import os
 import uuid
 from graph.pipeline_state import PipelineState
 
-
 # ---------------- INIT AGENTS ----------------
 
 def init_agents(gemini_model, eleven_client, audio_dir):
@@ -12,6 +11,7 @@ def init_agents(gemini_model, eleven_client, audio_dir):
     from agents.render_agent import RenderAgent
     from agents.audio_agent import AudioAgent
     from agents.fix_agent import FixAgent
+    from agents.media_sync_agent import MediaSyncAgent
 
     return {
         "gemini": GeminiManimAgent(gemini_model),
@@ -19,70 +19,64 @@ def init_agents(gemini_model, eleven_client, audio_dir):
         "test": TestAgent(),
         "render": RenderAgent(),
         "audio": AudioAgent(eleven_client, audio_dir),
-        "fix": FixAgent(gemini_model)
+        "fix": FixAgent(gemini_model),
+        "media_sync": MediaSyncAgent(),
     }
-
-def merge_state(old, updates):
-    return {**old, **updates}
-
 
 # ---------------- GRAPH NODES ----------------
 
 def gemini_node(state: PipelineState, agents):
-    # 1. Run Gemini
     result = agents["gemini"].run(state["prompt"])
-    
-    # 2. Check for failure
-    if not result.success:
-        # Return the ACTUAL error from Gemini (e.g., API key issue)
-        return merge_state(state, {
-            "error": result.error or "Gemini returned empty code",
-            "manim_code": None
-        })
 
-    return merge_state(state, {
-        "manim_code": result.data,
+    if not result.success:
+        return {
+            "error": result.error,
+            "manim_code": None
+        }
+
+    return {
+        "manim_code": result.data["manim_code"],
+        "audio_script": result.data["audio_script"],
         "error": None
-    })
+    }
+
 
 def fix_node(state, agents):
-    # This calls the FixAgent class we just created
     result = agents["fix"].run(state)
 
     if not result.success:
-        return merge_state(state, {
+        return {
             "error": result.error,
-            "retries": state["retries"] + 1
-        })
+            "retries": state.get("retries", 0) + 1
+        }
 
-    return merge_state(state, {
+    return {
         "manim_code": result.data,
-        "retries": state["retries"] + 1,
+        "retries": state.get("retries", 0) + 1,
         "error": None
-    })
+    }
 
 
 def alignment_node(state: PipelineState, agents):
-    # 1. Skip if there is already an error
+    # If error exists, return empty dict (no updates)
     if state.get("error"):
-        return state
+        return {}
 
-    # 2. Run Alignment
     result = agents["align"].run(state["manim_code"])
     
-    return merge_state(state, {
-        "manim_code": result.data if result.success else state["manim_code"]
-    })
+    # Only update manim_code if successful
+    if result.success:
+        return {"manim_code": result.data}
+    
+    return {}
 
 
 def save_script_node(state, agents):
-    # 1. Check for upstream error first!
     if state.get("error"):
-        return {"error": state["error"]}
+        return {}
 
-    # 2. Check if code exists
     if not state.get("manim_code"):
-        return merge_state(state, {"error": "No Manim code generated (Check Gemini API key)"})
+        return {"error": "No Manim code generated"}
 
     scripts_dir = state["scripts_dir"]
     os.makedirs(scripts_dir, exist_ok=True)
@@ -93,21 +87,19 @@ def save_script_node(state, agents):
     with open(script_path, "w", encoding="utf-8") as f:
         f.write(state["manim_code"])
 
-    return merge_state(state, {
+    return {
         "script_path": script_path,
         "error": None
-    })
+    }
 
 def test_node(state, agents):
-    # 1. Safety Check: If previous steps failed, don't run test
     if state.get("error"):
-        return {"error": state["error"]}
+        return {}
 
     script_path = state.get("script_path")
     if not script_path:
-        return {"error": "Script path is missing (Generation failed)"}
+        return {"error": "Script path is missing"}
 
-    # 2. Run the test
     result = agents["test"].run(script_path)
 
     if result.success:
@@ -116,31 +108,61 @@ def test_node(state, agents):
             "test_passed": True
         }
 
-    # 3. Handle Failure
-    # If we have retried enough times, stop (return error without fix request)
+    # If retries maxed out
     if state.get("retries", 0) >= 2:
         return {
             "error": "Max retries reached during test",
             "test_passed": False
         }
 
-    # IMPORTANT: Set an error string here. 
-    # The router sees this error + retries < 2, and sends it to 'fix'.
-    return merge_state(state, {"error": "Test failed, requesting fix"})
+    return {"error": "Test failed, requesting fix"}
 
 def render_node(state: PipelineState, agents):
+    # Parallel Node: MUST only return its specific updates
+    if state.get("error"):
+        return {}
+
     result = agents["render"].run(
         state["script_path"],
         state["videos_dir"]
     )
     if not result.success:
-        return merge_state(state, {"error": result.error})
+        return {"error": result.error}
 
-    return merge_state(state, {"video_path": result.data})
+    return {"video_path": result.data}
 
 
 def audio_node(state: PipelineState, agents):
-    result = agents["audio"].run(state["transcript"])
+    # Parallel Node: MUST only return its specific updates
+    if state.get("error"):
+        return {}
+
+    script = state.get("audio_script")
+    if not script:
+        return {"error": "No audio script found"}
+
+    result = agents["audio"].run(script)
     if result.success:
-        return merge_state(state, {"audio_path": result.data})
-    return merge_state(state, {})
+        return {"audio_path": result.data}
+    
+    return {"error": result.error}
+
+def media_sync_node(state: PipelineState, agents):
+    if state.get("error"):
+        return {}
+
+    if not state.get("video_path") or not state.get("audio_path"):
+        return {"error": "Missing audio or video for merging"}
+
+    result = agents["media_sync"].run(
+        state["video_path"],
+        state["audio_path"],
+        state["videos_dir"]
+    )
+
+    if not result["success"]:
+        return {"error": result["error"]}
+
+    return {
+        "final_video_path": result["data"]
+    }

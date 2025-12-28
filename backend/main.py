@@ -91,6 +91,7 @@ def generate_video(req: PromptRequest):
         "script_path": None,
         "video_path": None,
         "audio_path": None,
+        "audio_script": None,
         "error": None,
         "retries": 0,
         "scripts_dir": SCRIPTS_DIR,
@@ -104,7 +105,7 @@ def generate_video(req: PromptRequest):
         raise HTTPException(status_code=500, detail=result["error"])
 
     return {
-        "videoUrl": f"http://localhost:8000/videos/{os.path.basename(result['video_path'])}",
+        "videoUrl": f"http://localhost:8000/videos/{os.path.basename(result['final_video_path'])}",
         "audioUrl": (
             f"http://localhost:8000/audio/{os.path.basename(result['audio_path'])}"
             if result.get("audio_path") else None

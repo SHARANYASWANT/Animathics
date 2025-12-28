@@ -8,7 +8,10 @@ class PipelineState(TypedDict):
 
     script_path: Optional[str]
     video_path: Optional[str]
+    video_duration: Optional[float]
+    audio_script: Optional[str]
     audio_path: Optional[str]
+    final_video_path: Optional[str]
 
     error: Optional[str]
     retries: int

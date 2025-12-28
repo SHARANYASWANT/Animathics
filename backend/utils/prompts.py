@@ -19,18 +19,56 @@ def build_gemini_prompt(topic: str) -> str:
 - ❌ Elements extending beyond screen boundaries
 - ❌ Overlapping text or objects
 - ❌ Do NOT use MathTex or LaTeX. Use Text instead.
+- ❌ self.mobjects.animate (self.mobjects is a LIST, not an object!)
 
+## 🆕 AUDIO + VIDEO SYNCHRONIZATION (MANDATORY)
+
+You MUST generate TWO outputs:
+
+### 1️⃣ MANIM_CODE
+- Contains ONLY animation logic
+- Minimal on-screen text
+- NO long explanations in text
+- Text should be titles or labels only
+
+### 2️⃣ AUDIO_SCRIPT
+- Pure narration text
+- Conversational and explanatory
+- No timestamps
+- No stage directions
+- No references to animations
+- This text will be sent directly to ElevenLabs
+
+⚠️ **IMPORTANT**
+- ALL explanations must go into `AUDIO_SCRIPT`
+- The video must rely on visuals, not paragraphs of text
+
+---
 
 ## ✅ MANDATORY REQUIREMENTS
 
-### *1. IMPORTS - ONLY THIS:*
+## 🆕 TEXT REMOVAL RULE BEFORE DIAGRAMS (CRITICAL)
+
+Before showing ANY of the following:
+- Shapes (Circle, Square, Line, etc.)
+- Diagrams
+- Axes or graphs
+- Visual demonstrations
+
+YOU MUST CLEAR THE SCREEN USING EXACTLY THIS CODE:
+
 ```python
+# CORRECT WAY TO CLEAR SCREEN (Handles mixed types safely)
+self.play(FadeOut(Group(*self.mobjects))) 
+self.wait(0.3)
+1. IMPORTS - ONLY THIS:
+Python
+
 from manim import *
 import numpy as np  # Only if needed for calculations
-```
+2. VERIFIED BASIC SHAPES ONLY:
+Python
 
-### *2. VERIFIED BASIC SHAPES ONLY:*
-```python
 # USE THESE BUILT-IN SHAPES ONLY:
 # Circle()
 # Square() 
@@ -43,10 +81,9 @@ import numpy as np  # Only if needed for calculations
 
 # NEVER create custom VMobject classes unless absolutely necessary
 # ALWAYS use np.array() for coordinate calculations
-```
+3. POSITION SYSTEM - SAFE COORDINATES:
+Python
 
-### *3. POSITION SYSTEM - SAFE COORDINATES:*
-```python
 # SCREEN BOUNDARIES (NEVER EXCEED):
 # MAX_X = 5.5    # Left/Right limit (safe zone)
 # MAX_Y = 2.8    # Up/Down limit (safe zone)
@@ -70,10 +107,9 @@ import numpy as np  # Only if needed for calculations
 # obj2.move_to(RIGHT * 2)              # Right position (no overlap)
 # obj3.move_to(UP * 1.5)               # Top position
 # obj4.move_to(DOWN * 1.5)             # Bottom position
-```
+4. TEXT AND MATH - SIMPLE ONLY:
+Python
 
-### *4. TEXT AND MATH - SIMPLE ONLY:*
-```python
 # TEXT (ALWAYS WORKS):
 # title = Text("Title Here", font_size=48)
 # subtitle = Text("Subtitle", font_size=32)
@@ -83,17 +119,15 @@ import numpy as np  # Only if needed for calculations
 # formula = MathTex(r"f(x) = 2x + 1")
 
 # AVOID: Complex LaTeX, special symbols, or advanced formatting
-```
+5. COLORS - BUILT-IN ONLY:
+Python
 
-### *5. COLORS - BUILT-IN ONLY:*
-```python
 # USE THESE COLORS ONLY:
 # RED, BLUE, GREEN, YELLOW, ORANGE, PURPLE, PINK
 # WHITE, BLACK, GRAY, LIGHT_GRAY, DARK_GRAY
-```
+6. AXES AND GRAPHS - VERIFIED TEMPLATE:
+Python
 
-### *6. AXES AND GRAPHS - VERIFIED TEMPLATE:*
-```python
 # SAFE AXES CONFIGURATION:
 # axes = Axes(
 #     x_range=[-4, 4, 1],
@@ -107,11 +141,9 @@ import numpy as np  # Only if needed for calculations
 # curve = axes.plot(lambda x: x**2, x_range=[-2, 2], color=BLUE)
 
 #Mandatory alignment : Always center and doesnot goes out of layout (text, shapes, other things) focus on center alignment without overlapping and the value should be relative to the topics dont be hardcoded.
-```
+🏗 MANDATORY SCENE STRUCTURE
+Python
 
-## 🏗 MANDATORY SCENE STRUCTURE
-
-```python
 from manim import *
 
 class GeneratedScene(Scene):
@@ -142,28 +174,26 @@ class GeneratedScene(Scene):
     
     def clear_screen(self):
         # Remove all objects safely
-        self.play(FadeOut(VGroup(*self.mobjects)), run_time=1)
+        # FIX: Use Group to handle both VMobjects and Mobjects (like Images)
+        self.play(FadeOut(Group(*self.mobjects)), run_time=1)
         self.wait(0.5)
     
     def create_conclusion(self):
         conclusion = Text("Conclusion", font_size=36, color=GREEN)
         conclusion.move_to(ORIGIN)
         self.play(Write(conclusion), run_time=1.5)
-```
+🔧 ERROR PREVENTION RULES
+Rule 1: Method Verification
+Python
 
-## 🔧 ERROR PREVENTION RULES
-
-### *Rule 1: Method Verification*
-```python
 # CORRECT: Always provide required parameters
 # corner = square.get_corner(UP + RIGHT)  # Direction required
 
 # WRONG: Missing parameters
 # corner = square.get_corner()  # Will cause error
-```
+Rule 2: VGroup for VMobjects Only
+Python
 
-### *Rule 2: VGroup for VMobjects Only*
-```python
 # CORRECT: Only VMobjects in VGroup
 # shapes = VGroup(circle, square, triangle)  # All VMobjects
 # self.play(Create(shapes), run_time=2)
@@ -175,10 +205,9 @@ class GeneratedScene(Scene):
 
 # WRONG: Mixing VMobject and Mobject in VGroup
 # objects = VGroup(*self.mobjects)  # May cause TypeError
-```
+Rule 3: Simple Animations Only
+Python
 
-### *Rule 3: Simple Animations Only*
-```python
 # SAFE ANIMATIONS:
 # self.play(Create(obj), run_time=2)
 # self.play(Write(text), run_time=1.5)
@@ -188,10 +217,9 @@ class GeneratedScene(Scene):
 # self.play(obj.animate.shift(UP), run_time=1)
 
 # AVOID: Complex custom animations
-```
+Rule 4: Screen Layout Management
+Python
 
-### *Rule 4: Screen Layout Management*
-```python
 # TITLE AREA (Top 15% of screen):
 # title.to_edge(UP, buff=0.8)           # Safe title position
 
@@ -212,9 +240,16 @@ class GeneratedScene(Scene):
 # positions = [LEFT*2 + UP, RIGHT*2 + UP, LEFT*2 + DOWN, RIGHT*2 + DOWN]
 # for obj, pos in zip(objects, positions):
 #     obj.move_to(pos)
-```
+🚨 ABSOLUTE OUTPUT FORMAT (NO EXCEPTIONS)
+You MUST return your response in the following EXACT format. Do NOT add explanations, markdown, comments, or extra text.
 
-## 📝 VERIFIED TEMPLATES
+===MANIM_CODE=== <ONLY valid Python Manim Community code here>
+
+===AUDIO_SCRIPT=== <ONLY plain English narration text here>
+
+If you fail to follow this format exactly, the output will be rejected.
+
+📝 VERIFIED TEMPLATES
 """
 
 def build_alignment_prompt(manim_code: str) -> str:
