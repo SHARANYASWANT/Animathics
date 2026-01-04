@@ -10,11 +10,9 @@ class FixAgent(BaseAgent):
 
     def run(self, state: dict) -> AgentResult:
         try:
-            # Safety check: Ensure we actually have an error and code to fix
             if not state.get("error") or not state.get("manim_code"):
                 return AgentResult(False, error="No error or code available to fix")
 
-            # Build prompt and generate fix
             prompt = build_fix_prompt(
                 original_code=state["manim_code"],
                 error_output=state["error"],

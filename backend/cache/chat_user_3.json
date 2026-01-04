@@ -1,0 +1,10 @@
+[
+  {
+    "role": "user",
+    "content": "hello"
+  },
+  {
+    "role": "model",
+    "content": "Hi there! I'm a math tutor, and I'm here to help you understand math concepts, solve problems, or just practice your skills.\n\nWhat math topic are you working on today, or what question do you have? Feel free to ask me anything!"
+  }
+]
